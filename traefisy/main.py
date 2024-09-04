@@ -1,9 +1,9 @@
 import typer
 from rich.console import Console
 from rich.table import Table
-import utils
-from db.db import get_db, init_db
-from utils import add_router, is_router_duplicate, get_routers
+from . import utils
+from .db.db import get_db, init_db
+from .utils import add_router, is_router_duplicate, get_routers
 from sqlalchemy.orm import Session
 import yaml
 
@@ -159,7 +159,7 @@ def export():
             }
         }
 
-    with open('dynamic_conf.yml', 'w') as file:
+    with open('../dynamic_conf.yml', 'w') as file:
         yaml.dump(config, file)
 
     console.print("[green]dynamic_conf.yml has been generated.[/green]")
