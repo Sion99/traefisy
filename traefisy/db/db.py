@@ -1,3 +1,4 @@
+import typer
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -13,6 +14,19 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # 베이스 클래스 생성
 Base = declarative_base()
+
+
+def check_if_db_exists():
+    if os.path.exists(os.path.join(BASE_DIR, 'traefisy.db')):
+        if typer.confirm("An existing database was found. Do you want to clear it and start fresh?", default=True):
+            os.remove(os.path.join(BASE_DIR, 'traefisy.db'))
+            typer.echo("Existing database has been deleted.")
+            return True
+        else:
+            typer.echo("Keeping the existing database.")
+            return False
+    else:
+        return True
 
 
 def init_db():
