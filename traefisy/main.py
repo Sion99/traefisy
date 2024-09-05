@@ -6,6 +6,7 @@ from db.db import get_db, init_db, check_if_db_exists
 from utils import add_router, is_router_duplicate, get_routers, get_acme_info, save_acme_info
 from sqlalchemy.orm import Session
 from ruamel.yaml import YAML
+import subprocess
 
 app = typer.Typer()
 console = Console()
@@ -67,18 +68,6 @@ def init():
         add_router(db=db, name=router_name, domain=routing_rule, service_name=service_name, service_url=service_url,
                    entrypoints="websecure", tls=tls)
         console.print(f"[green]{router_name} router has been successfully added![/green]\n")
-
-    # 미들웨어 설정
-    # if typer.confirm("Would you like to configure middleware?", default=True):
-    #     if typer.confirm("Would you like to redirect HTTP to HTTPS?", default=True):
-    #
-    #     if typer.confirm("Would you like to set up Basic Auth?", default=False):
-    #         # Basic Auth 설정 로직 추가 가능
-    #         pass
-
-    # 라우터 추가 예시
-
-    # 추가 로직
 
 
 @app.command()
@@ -147,9 +136,10 @@ def show():
 def export():
     db: Session = next(get_db())
     routers = get_routers(db)
+    settings = get_acme_info(db)
 
     # dynamic_conf.yml 파일 생성
-    config = {
+    dynamic_conf = {
         "http": {
             "routers": {},
             "services": {},
@@ -164,16 +154,16 @@ def export():
     }
 
     for router in routers:
-        config["http"]["routers"][router.name] = {
+        dynamic_conf["http"]["routers"][router.name] = {
             "rule": f"Host(`{router.domain}`)",
             "service": router.service_name,
             "entryPoints": [router.entrypoints]
         }
 
         if router.tls:
-            config["http"]["routers"][router.name]["tls"] = {"certResolver": "letsencrypt"}
+            dynamic_conf["http"]["routers"][router.name]["tls"] = {"certResolver": "letsencrypt"}
 
-        config["http"]["services"][router.service_name] = {
+        dynamic_conf["http"]["services"][router.service_name] = {
             "loadBalancer": {
                 "servers": [
                     {"url": router.service_url}
@@ -186,9 +176,129 @@ def export():
 
     # YAML 덤프 시 들여쓰기 수준을 명시적으로 설정
     with open('../dynamic_conf.yml', 'w') as file:
-        yaml.dump(config, file)  # width 추가
+        yaml.dump(dynamic_conf, file)  # width 추가
 
     console.print("[green]dynamic_conf.yml has been generated.[/green]")
+
+    # Static Configuration 파일 생성 (traefik.yml)
+    cert_file = f"{settings.cert_dir}/fullchain.pem"
+    key_file = f"{settings.cert_dir}/privkey.pem"
+
+    static_config = {
+        "api": {
+            "dashboard": True,
+            "insecure": True
+        },
+        "providers": {
+            "docker": {
+                "endpoint": "unix:///var/run/docker.sock",
+                "exposedByDefault": False,
+                "watch": True
+            },
+            "file": {
+                "filename": "./dynamic_conf.yml",
+                "watch": True
+            }
+        },
+        "entryPoints": {
+            "web": {
+                "address": ":80",
+                "http": {
+                    "redirections": {
+                        "entryPoint": {
+                            "to": "websecure",
+                            "scheme": "https",
+                            "permanent": True
+                        }
+                    }
+                }
+            },
+            "websecure": {
+                "address": ":443"
+            }
+        },
+        "tls": {
+            "stores": {
+                "default": {
+                    "defaultCertificate": {
+                        "certFile": cert_file,
+                        "keyFile": key_file
+                    }
+                }
+            }
+        },
+        "certificatesResolvers": {
+            "letsencrypt": {
+                "acme": {
+                    "email": settings.acme_email,
+                    "storage": "./acme.json",
+                    "httpChallenge": {
+                        "entryPoint": "web"
+                    }
+                }
+            }
+        }
+    }
+
+    with open('../traefik.yml', 'w') as file:
+        yaml.dump(static_config, file)
+
+    console.print("[green]traefik.yml has been generated.[/green]")
+
+
+@app.command()
+def run():
+    db: Session = next(get_db())
+    settings = get_acme_info(db)
+
+    export()
+
+    cert_file_path = f"{settings.cert_dir}/fullchain.pem"
+    key_file_path = f"{settings.cert_dir}/privkey.pem"
+
+
+    yaml = YAML()
+    yaml.indent(mapping=2, sequence=4, offset=2)
+
+    # docker-compose.yml 파일 생성
+    docker_compose_content = {
+        "version": "3.8",
+        "services": {
+            "reverse-proxy": {
+                "image": "traefik:v2.10",
+                "network_mode": "host",
+                "command": ["--configFile=/traefik.yml"],
+                "ports": [
+                    "80:80",
+                    "443:443",
+                    "8080:8080"
+                ],
+                "volumes": [
+                    "/var/run/docker.sock:/var/run/docker.sock",
+                    "/etc/localtime:/etc/localtime:ro",
+                    "./dynamic_conf.yml:/dynamic_conf.yml",
+                    "./traefik.yml:/traefik.yml",
+                    f"{cert_file_path}:/fullchain.pem",
+                    f"{key_file_path}:/privkey.pem",
+                    "./acme.json:/acme.json"
+                ]
+            }
+        }
+    }
+
+    # docker-compose.yml 파일 저장
+    with open('./docker-compose.yml', 'w') as file:
+        yaml.dump(docker_compose_content, file)
+
+    console.print("[green]docker-compose.yml has been generated.[/green]")
+
+    # Docker Compose로 Traefik 실행
+    try:
+        console.print("[yellow]Starting Traefik using Docker Compose...[/yellow]")
+        subprocess.run(["docker", "compose", "up", "-d"], check=True)
+        console.print("[green]Traefik is up and running![/green]")
+    except subprocess.CalledProcessError as e:
+        console.print(f"[red]Error occurred while starting Traefik: {e}[/red]")
 
 
 if __name__ == "__main__":
