@@ -5,7 +5,7 @@ import utils
 from db.db import get_db, init_db, check_if_db_exists
 from utils import add_router, is_router_duplicate, get_routers, get_acme_info, save_acme_info
 from sqlalchemy.orm import Session
-import yaml
+from ruamel.yaml import YAML
 
 app = typer.Typer()
 console = Console()
@@ -153,7 +153,13 @@ def export():
         "http": {
             "routers": {},
             "services": {},
-            "middlewares": {}
+            "middlewares": {
+                "https-redirect": {
+                    "redirectScheme": {
+                        "scheme": "https"
+                    }
+                }
+            }
         }
     }
 
@@ -175,8 +181,12 @@ def export():
             }
         }
 
+    yaml = YAML()
+    yaml.indent(mapping=2, sequence=4, offset=2)
+
+    # YAML 덤프 시 들여쓰기 수준을 명시적으로 설정
     with open('../dynamic_conf.yml', 'w') as file:
-        yaml.dump(config, file)
+        yaml.dump(config, file)  # width 추가
 
     console.print("[green]dynamic_conf.yml has been generated.[/green]")
 
