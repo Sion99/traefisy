@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from ruamel.yaml import YAML
 import subprocess
 
+import os
+
 app = typer.Typer()
 console = Console()
 
@@ -174,7 +176,7 @@ def export():
     yaml.indent(mapping=2, sequence=4, offset=2)
 
     # YAML 덤프 시 들여쓰기 수준을 명시적으로 설정
-    with open('../dynamic_conf.yml', 'w') as file:
+    with open('./yaml/dynamic_conf.yml', 'w') as file:
         yaml.dump(dynamic_conf, file)  # width 추가
 
     console.print("[green]dynamic_conf.yml has been generated.[/green]")
@@ -239,7 +241,7 @@ def export():
         }
     }
 
-    with open('../traefik.yml', 'w') as file:
+    with open('./yaml/traefik.yml', 'w') as file:
         yaml.dump(static_config, file)
 
     console.print("[green]traefik.yml has been generated.[/green]")
@@ -255,6 +257,20 @@ def run():
     cert_file_path = f"{settings.cert_dir}/fullchain.pem"
     key_file_path = f"{settings.cert_dir}/privkey.pem"
 
+    # acme.json 파일 생성 및 권한 설정
+    acme_file_path = "./acme.json"
+
+    # acme.json 파일이 없으면 생성
+    if not os.path.exists(acme_file_path):
+        console.print("[yellow]Creating acme.json file...[/yellow]")
+        with open(acme_file_path, 'w') as acme_file:
+            acme_file.write('{}')  # 빈 JSON 객체로 초기화
+        console.print("[green]acme.json has been created.[/green]")
+
+    # 파일 권한을 600으로 설정
+    console.print("[yellow]Setting permissions for acme.json...[/yellow]")
+    os.chmod(acme_file_path, 0o600)
+    console.print("[green]Permissions for acme.json have been set to 600.[/green]")
 
     yaml = YAML()
     yaml.indent(mapping=2, sequence=4, offset=2)
@@ -286,7 +302,7 @@ def run():
     }
 
     # docker-compose.yml 파일 저장
-    with open('./docker-compose.yml', 'w') as file:
+    with open('./yaml/docker-compose.yml', 'w') as file:
         yaml.dump(docker_compose_content, file)
 
     console.print("[green]docker-compose.yml has been generated.[/green]")
