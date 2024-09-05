@@ -3,7 +3,7 @@ from rich.console import Console
 from rich.table import Table
 import utils
 from db.db import get_db, init_db, check_if_db_exists
-from utils import add_router, is_router_duplicate, get_routers
+from utils import add_router, is_router_duplicate, get_routers, get_acme_info, save_acme_info
 from sqlalchemy.orm import Session
 import yaml
 
@@ -31,10 +31,23 @@ def init():
     # TLS/HTTPS 설정
     tls = False
 
-    if typer.confirm("Would you like to enable HTTPS using Let's Encrypt?", default=True):
-        acme_email = typer.prompt("Please enter your ACME email")
-        cert_directory = typer.prompt("Please enter the directory to save certificates")
+    settings = get_acme_info(db)
+
+    if not settings:
+        if typer.confirm("Would you like to enable HTTPS using Let's Encrypt?", default=True):
+            acme_email = typer.prompt("Please enter your ACME email")
+            cert_dir = typer.prompt("Please enter the directory to save certificates")
+            save_acme_info(db, acme_email, cert_dir)
+            tls = True
+        else:
+            tls = False
+    else:
+        acme_email = settings.acme_email
+        cert_dir = settings.cert_dir
         tls = True
+
+    console.print(f"Using ACME email: [green]{acme_email}[/green]")
+    console.print(f"ACME keys will be placed: [green]{cert_dir}[/green]")
 
     # 라우터 설정 (반복문)
     while True:

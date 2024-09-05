@@ -6,6 +6,14 @@ import uuid
 Base = declarative_base()
 
 
+class Settings(Base):
+    __tablename__ = 'settings'
+
+    id = Column(Integer, primary_key=True, index=True)
+    acme_email = Column(String, nullable=False)
+    cert_dir = Column(String, nullable=False)
+
+
 class Router(Base):
     __tablename__ = 'routers'
 
