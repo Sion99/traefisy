@@ -2,7 +2,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 from traefisy.db.db import get_db, init_db, check_if_db_exists
-from traefisy.utils import add_router, is_router_duplicate, get_routers, get_acme_info, save_acme_info
+from traefisy.utils import add_router, is_router_duplicate, get_routers, get_acme_info, save_acme_info, remove_router
 from sqlalchemy.orm import Session
 from ruamel.yaml import YAML
 import subprocess
@@ -51,7 +51,7 @@ def init():
     console.print(f"Using ACME email: [green]{acme_email}[/green]")
     console.print(f"ACME keys will be placed: [green]{cert_dir}[/green]")
 
-    # 라우터 설정 (반복문)
+    # 라우터 설정
     while True:
         if not typer.confirm("Would you like to add a router?", default=True):
             break
@@ -94,7 +94,7 @@ def add():
 def rm(identifier: str):
     db: Session = next(get_db())
 
-    removed = utils.remove_router(db, identifier)
+    removed = remove_router(db, identifier)
     if removed:
         console.print(f"[green]Router has been deleted successfully.[/green]")
     else:
@@ -175,9 +175,8 @@ def export():
     yaml = YAML()
     yaml.indent(mapping=2, sequence=4, offset=2)
 
-    # YAML 덤프 시 들여쓰기 수준을 명시적으로 설정
-    with open('./yaml/dynamic_conf.yml', 'w') as file:
-        yaml.dump(dynamic_conf, file)  # width 추가
+    with open('./dynamic_conf.yml', 'w') as file:
+        yaml.dump(dynamic_conf, file)
 
     console.print("[green]dynamic_conf.yml has been generated.[/green]")
 
@@ -241,7 +240,7 @@ def export():
         }
     }
 
-    with open('./yaml/traefik.yml', 'w') as file:
+    with open('./traefik.yml', 'w') as file:
         yaml.dump(static_config, file)
 
     console.print("[green]traefik.yml has been generated.[/green]")
@@ -302,7 +301,7 @@ def run():
     }
 
     # docker-compose.yml 파일 저장
-    with open('./yaml/docker-compose.yml', 'w') as file:
+    with open('./docker-compose.yml', 'w') as file:
         yaml.dump(docker_compose_content, file)
 
     console.print("[green]docker-compose.yml has been generated.[/green]")
