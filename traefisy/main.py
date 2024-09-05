@@ -1,9 +1,9 @@
 import typer
 from rich.console import Console
 from rich.table import Table
-from . import utils
-from .db.db import get_db, init_db
-from .utils import add_router, is_router_duplicate, get_routers
+import utils
+from db.db import get_db, init_db, check_if_db_exists
+from utils import add_router, is_router_duplicate, get_routers
 from sqlalchemy.orm import Session
 import yaml
 
@@ -13,6 +13,9 @@ console = Console()
 
 @app.command()
 def init():
+    if not check_if_db_exists():
+        return
+
     init_db()
 
     db: Session = next(get_db())

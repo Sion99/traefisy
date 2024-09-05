@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from traefisy.db import models
+from db import models
 
 
 def get_routers(db: Session):
