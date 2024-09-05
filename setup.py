@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="traefisy",
-    version="0.0.2",
+    version="0.0.3",
     description="A simple and efficient CLI tool for easy Traefik configuration.",
     author="sion",
     author_email="kmicety1@gmail.com",
@@ -17,7 +17,8 @@ setup(
         "typer[all]",
         "rich",
         "sqlalchemy",
-        "pyyaml"
+        "pyyaml",
+        "ruamel.yaml"
     ],
     entry_points={
         "console_scripts": [

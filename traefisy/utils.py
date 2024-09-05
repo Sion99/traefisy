@@ -1,5 +1,20 @@
 from sqlalchemy.orm import Session
-from db import models
+from traefisy.db import models
+
+
+def save_acme_info(db: Session, acme_email: str, cert_dir: str):
+    settings = db.query(models.Settings).first()
+    if not settings:
+        settings = models.Settings(acme_email=acme_email, cert_dir=cert_dir)
+        db.add(settings)
+    else:
+        settings.acme_email = acme_email
+        settings.cert_dir = cert_dir
+    db.commit()
+
+
+def get_acme_info(db: Session):
+    return db.query(models.Settings).first()
 
 
 def save_acme_info(db: Session, acme_email: str, cert_dir: str):

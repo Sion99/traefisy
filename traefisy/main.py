@@ -1,9 +1,8 @@
 import typer
 from rich.console import Console
 from rich.table import Table
-import utils
-from db.db import get_db, init_db, check_if_db_exists
-from utils import add_router, is_router_duplicate, get_routers, get_acme_info, save_acme_info
+from traefisy.db.db import get_db, init_db, check_if_db_exists
+from traefisy.utils import add_router, is_router_duplicate, get_routers, get_acme_info, save_acme_info
 from sqlalchemy.orm import Session
 from ruamel.yaml import YAML
 import subprocess
