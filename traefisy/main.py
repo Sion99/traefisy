@@ -25,11 +25,6 @@ def init():
     # Welcome 메시지
     console.print("[bold cyan]Welcome to traefisy![/bold cyan]\n")
 
-    # EntryPoints 설정
-    if typer.confirm("Would you like to configure HTTP and HTTPS EntryPoints?", default=True):
-        http_port = typer.prompt("Please enter the HTTP port", default="80")
-        https_port = typer.prompt("Please enter the HTTPS port", default="443")
-
     # TLS/HTTPS 설정
     tls = False
 
@@ -38,7 +33,10 @@ def init():
     if not settings:
         if typer.confirm("Would you like to enable HTTPS using Let's Encrypt?", default=True):
             acme_email = typer.prompt("Please enter your ACME email")
-            cert_dir = typer.prompt("Please enter the directory to save certificates")
+            cert_dir = typer.prompt(
+                "Please enter the directory to save certificates (Press enter to choose default option)",
+                default="/etc/letsencrypt/live/default"
+            )
             save_acme_info(db, acme_email, cert_dir)
             tls = True
         else:
@@ -279,7 +277,7 @@ def run():
         "version": "3.8",
         "services": {
             "reverse-proxy": {
-                "image": "traefik:v2.10",
+                "image": "traefik:v3.1",
                 "network_mode": "host",
                 "command": ["--configFile=/traefik.yml"],
                 "ports": [
@@ -308,6 +306,9 @@ def run():
 
     # Docker Compose로 Traefik 실행
     try:
+        console.print("[yellow]Stopping any running Traefik instances...[/yellow]")
+        subprocess.run(["docker", "compose", "down"], check=True)
+
         console.print("[yellow]Starting Traefik using Docker Compose...[/yellow]")
         subprocess.run(["docker", "compose", "up", "-d"], check=True)
         console.print("[green]Traefik is up and running![/green]")

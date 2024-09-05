@@ -6,8 +6,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 # SQLite 데이터베이스 설정
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'traefisy.db')}"
+DATABASE_URL = f"sqlite:///traefisy.db"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -17,9 +16,9 @@ Base = declarative_base()
 
 
 def check_if_db_exists():
-    if os.path.exists(os.path.join(BASE_DIR, 'traefisy.db')):
+    if os.path.exists('traefisy.db'):
         if typer.confirm("An existing database was found. Do you want to clear it and start fresh?", default=True):
-            os.remove(os.path.join(BASE_DIR, 'traefisy.db'))
+            os.remove('traefisy.db')
             typer.echo("Existing database has been deleted.")
             return True
         else:
