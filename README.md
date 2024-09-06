@@ -2,6 +2,7 @@
 ![PyPI](https://img.shields.io/pypi/v/traefisy?label=pypi%20traefisy)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/traefisy)
 
+![화면 기록 2024-09-05 오후 10 45 22 (online-video-cutter com)](https://github.com/user-attachments/assets/bd9eaf16-0b0c-4212-8759-6dc4e8b278a0)
 
 **Traefisy** is a simple and powerful CLI tool that automates the configuration of [Traefik](https://doc.traefik.io/traefik/) reverse proxy settings. It allows you to easily manage routing rules, generate configuration files, and deploy Traefik in a Docker environment with minimal effort.
 
